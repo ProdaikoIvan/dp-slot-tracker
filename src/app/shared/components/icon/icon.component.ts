@@ -1,33 +1,12 @@
 import { Component, computed, inject, input } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { ICON_REGISTRY, IconName } from '../../icons';
+import { ICON_REGISTRY, IconName } from './index';
 
 @Component({
   selector: 'app-icon',
   standalone: true,
-  template: `
-    <svg
-      [attr.width]="size()"
-      [attr.height]="size()"
-      viewBox="0 0 24 24"
-      [attr.fill]="iconDef().fill ?? 'none'"
-      [attr.stroke]="iconDef().stroke ?? 'currentColor'"
-      [attr.stroke-width]="iconDef().strokeWidth ?? 2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      [innerHTML]="safeContent()"
-    ></svg>
-  `,
-  styles: [
-    `
-      :host {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        line-height: 0;
-      }
-    `,
-  ],
+  templateUrl: './icon.component.html',
+  styleUrl: './icon.component.scss',
 })
 export class IconComponent {
   private readonly sanitizer = inject(DomSanitizer);

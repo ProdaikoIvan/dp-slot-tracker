@@ -4,18 +4,10 @@
   <main class="content">
     @if (!isOnTargetSite()) {
       <app-not-on-site />
+    } @else if (!isCenterSupported()) {
+      <app-unsupported-center />
     } @else {
-      <section class="active-tracker-card">
-        <div class="status-indicator">
-          <span class="pulse-dot"></span>
-          <span>Підключено до ДП Документ</span>
-        </div>
-        <h2 class="card-title">Відстеження слотів активне</h2>
-        <p class="card-desc">
-          Ви знаходитесь на цільовому сайті. Наступним кроком підключимо список центрів
-          обслуговування.
-        </p>
-      </section>
+      <app-active-center />
     }
   </main>
 </div>

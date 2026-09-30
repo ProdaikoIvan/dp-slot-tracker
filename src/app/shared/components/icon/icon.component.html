@@ -1,0 +1,11 @@
+<svg
+  [attr.width]="size()"
+  [attr.height]="size()"
+  viewBox="0 0 24 24"
+  [attr.fill]="iconDef().fill ?? 'none'"
+  [attr.stroke]="iconDef().stroke ?? 'currentColor'"
+  [attr.stroke-width]="iconDef().strokeWidth ?? 2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  [innerHTML]="safeContent()"
+></svg>

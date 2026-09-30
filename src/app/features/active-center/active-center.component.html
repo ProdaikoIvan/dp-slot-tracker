@@ -1,0 +1,26 @@
+@if (center(); as c) {
+  <div class="active-center-card">
+    <div class="center-header">
+      <span class="flag-icon">{{ c.flag }}</span>
+      <div class="center-meta">
+        <h2 class="center-name">{{ c.name }}, {{ c.country }}</h2>
+        @if (c.address) {
+          <p class="center-address">
+            <app-icon name="location" [size]="12" />
+            <span>{{ c.address }}</span>
+          </p>
+        }
+      </div>
+    </div>
+
+    <div class="tracking-status">
+      <span class="status-dot"></span>
+      <span>Відстеження активне для цього центру</span>
+    </div>
+
+    <button type="button" class="btn-queue" (click)="openQueue()">
+      <span>Запис онлайн (Е-черга)</span>
+      <app-icon name="external-link" [size]="14" />
+    </button>
+  </div>
+}

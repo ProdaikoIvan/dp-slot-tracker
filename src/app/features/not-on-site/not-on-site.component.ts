@@ -17,8 +17,4 @@ export class NotOnSiteComponent {
   openSite(): void {
     this.tabService.openTargetSite();
   }
-
-  simulateOnSite(): void {
-    this.tabService.toggleSimulation();
-  }
 }

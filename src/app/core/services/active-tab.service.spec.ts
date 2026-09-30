@@ -13,9 +13,7 @@ describe('ActiveTabService', () => {
     expect(service).toBeTruthy();
   });
 
-  it('should allow toggling simulation in test/browser environment', () => {
-    const initial = service.isOnTargetSite();
-    service.toggleSimulation();
-    expect(service.isOnTargetSite()).toBe(!initial);
+  it('should have initial target site state', () => {
+    expect(service.isOnTargetSite()).toBe(false);
   });
 });

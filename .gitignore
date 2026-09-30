@@ -45,3 +45,7 @@ Thumbs.db
 
 # AI Agent Instructions
 AGENTS.md
+
+# Chrome Extension Packages
+*.crx
+*.pem

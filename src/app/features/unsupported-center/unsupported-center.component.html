@@ -1,0 +1,28 @@
+<div class="unsupported-container">
+  <div class="alert-box">
+    <span class="alert-badge">Центр не підтримується</span>
+    <h2 class="alert-title">Оберіть підтримуване місто</h2>
+    <p class="alert-desc">
+      Наше розширення наразі підтримує такі міста. Оберіть одне з них для переходу до електронної
+      черги:
+    </p>
+  </div>
+
+  <div class="centers-list">
+    @for (center of centers; track center.id) {
+      <button
+        type="button"
+        class="center-row"
+        (click)="openQueue(center.queueUrl)"
+        [title]="'Перейти до черги ' + center.name"
+      >
+        <span class="flag-badge">{{ center.flag }}</span>
+        <div class="center-info">
+          <span class="center-name">{{ center.name }}</span>
+          <span class="center-country">{{ center.country }}</span>
+        </div>
+        <app-icon name="external-link" [size]="14" class="arrow-icon" />
+      </button>
+    }
+  </div>
+</div>

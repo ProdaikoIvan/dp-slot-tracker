@@ -1,5 +1,10 @@
 @use '../../../styles/variables' as *;
 
+:host {
+  display: block;
+  width: 100%;
+}
+
 .not-on-site-card {
   width: 100%;
   background-color: var(--bg-surface);
@@ -73,19 +78,5 @@
 
   &:hover {
     background-color: var(--color-primary-hover);
-  }
-}
-
-.btn-simulate {
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  font-size: 11px;
-  margin-top: 14px;
-  cursor: pointer;
-  text-decoration: underline;
-
-  &:hover {
-    color: var(--text-secondary);
   }
 }

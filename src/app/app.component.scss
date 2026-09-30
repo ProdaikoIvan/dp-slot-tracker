@@ -11,8 +11,8 @@
   flex: 1;
   padding: 16px;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  width: 100%;
 }
 
 .active-tracker-card {
