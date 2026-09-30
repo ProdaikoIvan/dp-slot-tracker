@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "DP Slot Tracker",
+  "version": "1.0.0",
+  "description": "Chrome extension for tracking delivery and appointment slots",
+  "action": {
+    "default_popup": "index.html",
+    "default_title": "DP Slot Tracker"
+  },
+  "permissions": ["storage"]
+}
