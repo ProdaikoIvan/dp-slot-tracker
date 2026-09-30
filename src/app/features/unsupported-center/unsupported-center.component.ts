@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { ActiveTabService } from '../../core/services/active-tab.service';
 import { IconComponent } from '../../shared/components/icon';
 import { SupportedCenter } from '../../core/models/center.model';
@@ -13,6 +13,9 @@ import { SupportedCenter } from '../../core/models/center.model';
 export class UnsupportedCenterComponent {
   private readonly tabService = inject(ActiveTabService);
 
+  readonly isSelectionPrompt = computed(
+    () => !this.tabService.isOnTargetSite() || this.tabService.isMainPage(),
+  );
   readonly centers: readonly SupportedCenter[] = this.tabService.availableCenters;
 
   openQueue(queueUrl: string): void {

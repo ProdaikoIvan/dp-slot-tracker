@@ -9,6 +9,7 @@ import { SupportedCenter } from '../models/center.model';
 export class ActiveTabService {
   readonly isOnTargetSite = signal<boolean>(false);
   readonly isCenterSupported = signal<boolean>(false);
+  readonly isMainPage = signal<boolean>(false);
   readonly detectedCenter = signal<SupportedCenter | null>(null);
   readonly availableCenters = SUPPORTED_CENTERS;
 
@@ -32,8 +33,7 @@ export class ActiveTabService {
         if (isTarget) {
           this.parseCenterFromUrl(url);
         } else {
-          this.isCenterSupported.set(false);
-          this.detectedCenter.set(null);
+          this.resetState();
         }
         return isTarget;
       } catch {
@@ -49,7 +49,10 @@ export class ActiveTabService {
   private parseCenterFromUrl(url: string): void {
     const match = url.match(/^https?:\/\/([a-z0-9-]+)\.pasport\.org\.ua/i);
     const sub = match ? match[1].toLowerCase() : '';
-    const center = sub ? findSupportedCenter(sub) : null;
+    const isMain = !sub || sub === 'www';
+    this.isMainPage.set(isMain);
+
+    const center = sub && !isMain ? findSupportedCenter(sub) : null;
 
     if (center) {
       this.detectedCenter.set(center);
@@ -72,6 +75,7 @@ export class ActiveTabService {
   private resetState(): void {
     this.isOnTargetSite.set(false);
     this.isCenterSupported.set(false);
+    this.isMainPage.set(false);
     this.detectedCenter.set(null);
   }
 }

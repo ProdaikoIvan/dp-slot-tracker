@@ -20,16 +20,26 @@
   margin-bottom: 12px;
 }
 
-.alert-badge {
+.alert-badge,
+.info-badge {
   display: inline-block;
   font-size: 11px;
   font-weight: 700;
-  color: var(--color-amber);
-  background-color: rgba(245, 158, 11, 0.15);
   padding: 3px 10px;
   border-radius: var(--radius-pill);
-  border: 1px solid rgba(245, 158, 11, 0.25);
   margin-bottom: 8px;
+}
+
+.alert-badge {
+  color: var(--color-amber);
+  background-color: var(--color-amber-glow);
+  border: 1px solid var(--color-amber-border);
+}
+
+.info-badge {
+  color: var(--color-primary);
+  background-color: var(--color-primary-glow);
+  border: 1px solid var(--color-primary-border);
 }
 
 .alert-title {

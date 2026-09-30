@@ -1,11 +1,19 @@
 <div class="unsupported-container">
   <div class="alert-box">
-    <span class="alert-badge">Центр не підтримується</span>
-    <h2 class="alert-title">Оберіть підтримуване місто</h2>
-    <p class="alert-desc">
-      Наше розширення наразі підтримує такі міста. Оберіть одне з них для переходу до електронної
-      черги:
-    </p>
+    @if (isSelectionPrompt()) {
+      <span class="info-badge">Оберіть центр</span>
+      <h2 class="alert-title">Доступні відділення</h2>
+      <p class="alert-desc">
+        Оберіть потрібне місто зі списку для переходу до онлайн-запису в електронну чергу:
+      </p>
+    } @else {
+      <span class="alert-badge">Центр не підтримується</span>
+      <h2 class="alert-title">Оберіть підтримуване місто</h2>
+      <p class="alert-desc">
+        Наше розширення наразі підтримує такі міста. Оберіть одне з них для переходу до електронної
+        черги:
+      </p>
+    }
   </div>
 
   <div class="centers-list">

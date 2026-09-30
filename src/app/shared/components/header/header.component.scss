@@ -52,11 +52,6 @@
     font-size: 11px;
     color: var(--text-muted);
   }
-
-  &-subtitle {
-    font-size: 11px;
-    color: var(--text-muted);
-  }
 }
 
 .btn-start {
@@ -83,6 +78,6 @@
 
   &.btn-running {
     background-color: var(--color-danger);
-    color: #ffffff;
+    color: var(--text-primary);
   }
 }

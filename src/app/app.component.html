@@ -2,12 +2,10 @@
   <app-header [isRunning]="isRunning()" (toggleRun)="toggleRunning()" />
 
   <main class="content">
-    @if (!isOnTargetSite()) {
-      <app-not-on-site />
-    } @else if (!isCenterSupported()) {
-      <app-unsupported-center />
-    } @else {
+    @if (isCenterSupported()) {
       <app-active-center />
+    } @else {
+      <app-unsupported-center />
     }
   </main>
 </div>
