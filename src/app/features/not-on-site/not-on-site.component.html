@@ -1,0 +1,22 @@
+<div class="not-on-site-card">
+  <div class="icon-wrapper">
+    <app-icon name="document" [size]="24" />
+  </div>
+
+  <h2 class="card-title">Відкрийте сайт ДП Документ</h2>
+
+  <p class="card-desc">
+    Щоб відстежувати вільні слоти, перейдіть на офіційний сайт
+    <span class="highlight">{{ targetSite.domain }}</span
+    >.
+  </p>
+
+  <button type="button" class="btn-open-site" (click)="openSite()">
+    <span>Відкрити {{ targetSite.name }}</span>
+    <app-icon name="external-link" [size]="14" />
+  </button>
+
+  <button type="button" class="btn-simulate" (click)="simulateOnSite()">
+    (Режим розробника: перемкнути перевірку)
+  </button>
+</div>

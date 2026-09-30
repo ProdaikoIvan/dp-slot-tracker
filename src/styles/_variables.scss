@@ -1,56 +1,46 @@
-// Design Tokens & SCSS Variables
+// Дизайн-токени (Темна тема на основі референсу)
 
 :root {
-  // Brand Colors
-  --color-primary: #6366f1;
-  --color-primary-hover: #4f46e5;
-  --color-primary-light: #eef2ff;
+  // Акцентні кольори (Смарагдово-м'ятний)
+  --color-primary: #00d27a;
+  --color-primary-hover: #00ba6c;
+  --color-primary-glow: rgba(0, 210, 122, 0.15);
+  --color-primary-text: #08120c;
 
-  // Status Colors
-  --color-success: #10b981;
-  --color-warning: #f59e0b;
+  // Додаткові акценти
+  --color-amber: #f59e0b;
   --color-danger: #ef4444;
 
-  // Neutral Colors (Dark Mode by default for sleek modern look)
-  --bg-app: #0f172a;
-  --bg-card: #1e293b;
-  --bg-card-hover: #334155;
-  --border-subtle: #334155;
+  // Поверхні та фони
+  --bg-app: #0c1014;
+  --bg-surface: #161b22;
+  --bg-surface-elevated: #1f2631;
+  --bg-surface-subtle: #252e3b;
 
-  // Text Colors
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
+  // Межі
+  --border-subtle: #242c38;
+  --border-divider: #1a2027;
 
-  // Layout & Sizing
+  // Текст
+  --text-primary: #ffffff;
+  --text-secondary: #8e9fae;
+  --text-muted: #5c6c7c;
+
+  // Розміри та радіуси
   --popup-width: 380px;
-  --popup-min-height: 480px;
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-
-  // Typography
-  --font-family-base:
-    system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell,
-    sans-serif;
-  --font-size-xs: 0.75rem;
-  --font-size-sm: 0.875rem;
-  --font-size-base: 1rem;
-  --font-size-lg: 1.125rem;
-  --font-size-xl: 1.25rem;
-
-  // Shadows
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -2px rgba(0, 0, 0, 0.2);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
+  --popup-min-height: 500px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-pill: 9999px;
 }
 
-// SCSS Variables for quick imports
+// SCSS змінні для швидкого використання
 $color-primary: var(--color-primary);
-$color-primary-hover: var(--color-primary-hover);
 $bg-app: var(--bg-app);
-$bg-card: var(--bg-card);
+$bg-surface: var(--bg-surface);
 $border-subtle: var(--border-subtle);
 $text-primary: var(--text-primary);
 $text-secondary: var(--text-secondary);
+$radius-sm: var(--radius-sm);
 $radius-md: var(--radius-md);
+$radius-pill: var(--radius-pill);

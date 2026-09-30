@@ -3,7 +3,7 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "types": ["vitest/globals"]
+    "types": ["vitest/globals", "chrome"]
   },
   "include": ["src/**/*.d.ts", "src/**/*.spec.ts"]
 }

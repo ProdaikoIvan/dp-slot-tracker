@@ -1,0 +1,24 @@
+<header class="header">
+  <div class="brand">
+    <div class="brand-avatar">
+      <app-icon name="refresh" [size]="18" />
+    </div>
+    <div class="brand-meta">
+      <div class="brand-title-row">
+        <h1 class="brand-name">{{ config.name }}</h1>
+        <span class="brand-version">v{{ config.version }}</span>
+      </div>
+      <span class="brand-subtitle">Оновлено: Сьогодні</span>
+    </div>
+  </div>
+
+  <button type="button" class="btn-start" [class.btn-running]="isRunning()" (click)="onToggle()">
+    @if (isRunning()) {
+      <app-icon name="stop" [size]="14" />
+      <span>Stop</span>
+    } @else {
+      <app-icon name="play" [size]="14" />
+      <span>Start</span>
+    }
+  </button>
+</header>

@@ -7,5 +7,5 @@
     "default_popup": "index.html",
     "default_title": "DP Slot Tracker"
   },
-  "permissions": ["storage"]
+  "permissions": ["storage", "activeTab"]
 }

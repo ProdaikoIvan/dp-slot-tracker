@@ -1,6 +1,5 @@
 import { TestBed } from '@angular/core/testing';
 import { AppComponent } from './app.component';
-import { APP_CONFIG } from './core/constants/app.constants';
 
 describe('AppComponent', () => {
   beforeEach(async () => {
@@ -13,12 +12,5 @@ describe('AppComponent', () => {
     const fixture = TestBed.createComponent(AppComponent);
     const app = fixture.componentInstance;
     expect(app).toBeTruthy();
-  });
-
-  it('should render brand title from constants', async () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    await fixture.whenStable();
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('.brand-title')?.textContent).toContain(APP_CONFIG.name);
   });
 });

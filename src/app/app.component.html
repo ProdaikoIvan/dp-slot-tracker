@@ -1,29 +1,21 @@
-<main class="popup-container">
-  <header class="popup-header">
-    <div class="brand">
-      <div class="brand-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10"></circle>
-          <polyline points="12 6 12 12 16 14"></polyline>
-        </svg>
-      </div>
-      <div>
-        <h1 class="brand-title">{{ config.name }}</h1>
-        <p class="brand-subtitle">v{{ config.version }}</p>
-      </div>
-    </div>
-    <span class="status-badge" [class.active]="status() === 'active'">
-      {{ status() === 'ready' ? 'Ready' : 'Active' }}
-    </span>
-  </header>
+<div class="popup-wrapper">
+  <app-header [isRunning]="isRunning()" (toggleRun)="toggleRunning()" />
 
-  <section class="popup-content">
-    <div class="empty-state">
-      <div class="empty-state-icon">⚡</div>
-      <h2 class="empty-state-title">Проєкт успішно ініціалізовано</h2>
-      <p class="empty-state-desc">
-        Базова структура розширення готова. У наступних кроках додамо відстеження слотів.
-      </p>
-    </div>
-  </section>
-</main>
+  <main class="content">
+    @if (!isOnTargetSite()) {
+      <app-not-on-site />
+    } @else {
+      <section class="active-tracker-card">
+        <div class="status-indicator">
+          <span class="pulse-dot"></span>
+          <span>Підключено до ДП Документ</span>
+        </div>
+        <h2 class="card-title">Відстеження слотів активне</h2>
+        <p class="card-desc">
+          Ви знаходитесь на цільовому сайті. Наступним кроком підключимо список центрів
+          обслуговування.
+        </p>
+      </section>
+    }
+  </main>
+</div>
