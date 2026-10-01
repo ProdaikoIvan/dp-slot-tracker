@@ -1,0 +1,72 @@
+<div class="modal-backdrop" (click)="onBackdropClick($event)">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div class="modal-title-row">
+        <app-icon name="settings" [size]="18" />
+        <h2 class="modal-title">Налаштування</h2>
+      </div>
+
+      <button
+        type="button"
+        class="btn-close"
+        (click)="onClose()"
+        title="Закрити"
+        aria-label="Закрити"
+      >
+        <app-icon name="close" [size]="16" />
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <p class="modal-desc">
+        Вкажіть вашу email-адресу для отримання сповіщень при появі вільних слотів для запису.
+      </p>
+
+      <div class="form-group">
+        <label for="settings-email" class="form-label">Ваш Email:</label>
+        <div class="input-wrapper">
+          <app-icon name="mail" [size]="16" class="input-icon" />
+          <input
+            id="settings-email"
+            type="email"
+            class="form-input"
+            placeholder="example@mail.com"
+            [ngModel]="emailInput()"
+            (ngModelChange)="emailInput.set($event)"
+          />
+        </div>
+        @if (errorMessage(); as err) {
+          <span class="error-text">{{ err }}</span>
+        }
+      </div>
+
+      <label class="toggle-control">
+        <input
+          type="checkbox"
+          class="toggle-checkbox"
+          [checked]="emailNotifEnabled()"
+          (change)="emailNotifEnabled.set(!emailNotifEnabled())"
+        />
+        <span class="toggle-label">Надсилати сповіщення на email</span>
+      </label>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn-cancel" (click)="onClose()">
+        Скасувати
+      </button>
+      <button
+        type="button"
+        class="btn-save"
+        [class.btn-saved]="isSaved()"
+        (click)="onSave()"
+      >
+        @if (isSaved()) {
+          <span>Збережено!</span>
+        } @else {
+          <span>Зберегти</span>
+        }
+      </button>
+    </div>
+  </div>
+</div>

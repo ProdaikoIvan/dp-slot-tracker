@@ -1,0 +1,12 @@
+@if (days().length > 0) {
+  <div class="found-container">
+    <div class="found-header">
+      <span class="found-location-title">{{ formattedLocationText() }}</span>
+    </div>
+    <div class="days-list">
+      @for (day of days(); track day) {
+        <span class="day-chip">{{ day }}</span>
+      }
+    </div>
+  </div>
+}

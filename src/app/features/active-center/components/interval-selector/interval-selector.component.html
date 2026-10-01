@@ -1,0 +1,15 @@
+<div class="interval-section">
+  <span class="section-label">Інтервал перевірки:</span>
+  <div class="interval-chips">
+    @for (opt of options; track opt.seconds) {
+      <button
+        type="button"
+        class="chip-btn"
+        [class.chip-active]="currentInterval() === opt.seconds"
+        (click)="selectInterval(opt.seconds)"
+      >
+        {{ opt.label }}
+      </button>
+    }
+  </div>
+</div>

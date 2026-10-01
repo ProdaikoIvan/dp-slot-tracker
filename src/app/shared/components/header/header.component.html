@@ -1,7 +1,7 @@
 <header class="header">
   <div class="brand">
     <div class="brand-avatar">
-      <app-icon name="refresh" [size]="18" />
+      <app-icon name="document" [size]="18" />
     </div>
     <div class="brand-meta">
       <div class="brand-title-row">
@@ -11,13 +11,40 @@
     </div>
   </div>
 
-  <button type="button" class="btn-start" [class.btn-running]="isRunning()" (click)="onToggle()">
-    @if (isRunning()) {
-      <app-icon name="stop" [size]="14" />
-      <span>Stop</span>
-    } @else {
-      <app-icon name="play" [size]="14" />
-      <span>Start</span>
-    }
-  </button>
+  <div class="header-actions">
+    <button
+      type="button"
+      class="btn-icon"
+      (click)="onReset()"
+      title="Скинути до початкового стану"
+      aria-label="Скинути до початкового стану"
+    >
+      <app-icon name="refresh" [size]="16" />
+    </button>
+
+    <button
+      type="button"
+      class="btn-icon"
+      [class.is-active]="isSoundEnabled()"
+      (click)="onToggleSound()"
+      [attr.title]="isSoundEnabled() ? 'Вимкнути звук' : 'Увімкнути звук'"
+      [attr.aria-label]="isSoundEnabled() ? 'Вимкнути звук' : 'Увімкнути звук'"
+    >
+      @if (isSoundEnabled()) {
+        <app-icon name="bell" [size]="16" />
+      } @else {
+        <app-icon name="bell-off" [size]="16" />
+      }
+    </button>
+
+    <button
+      type="button"
+      class="btn-icon"
+      (click)="onOpenSettings()"
+      title="Налаштування"
+      aria-label="Налаштування"
+    >
+      <app-icon name="settings" [size]="16" />
+    </button>
+  </div>
 </header>

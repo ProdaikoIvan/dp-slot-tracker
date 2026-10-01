@@ -1,11 +1,24 @@
 <div class="popup-wrapper">
-  <app-header [isRunning]="isRunning()" (toggleRun)="toggleRunning()" />
+  <app-header
+    [isSoundEnabled]="isSoundEnabled()"
+    (toggleSound)="toggleSound()"
+    (openSettings)="toggleSettings()"
+    (reset)="resetTracker()"
+  />
 
   <main class="content">
-    @if (isCenterSupported()) {
+    @if (shouldShowTracker()) {
       <app-active-center />
     } @else {
       <app-unsupported-center />
     }
   </main>
+
+  @if (isSettingsOpen()) {
+    <app-settings-modal (closeModal)="isSettingsOpen.set(false)" />
+  }
+
+  @if (showTabClosedModal()) {
+    <app-tab-closed-modal (closeModal)="dismissTabClosedModal()" />
+  }
 </div>

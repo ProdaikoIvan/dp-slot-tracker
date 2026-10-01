@@ -10,12 +10,22 @@ import { IconComponent } from '../icon/icon.component';
   styleUrl: './header.component.scss',
 })
 export class HeaderComponent {
-  readonly isRunning = input<boolean>(false);
-  readonly toggleRun = output<void>();
+  readonly isSoundEnabled = input<boolean>(true);
+  readonly toggleSound = output<void>();
+  readonly openSettings = output<void>();
+  readonly reset = output<void>();
 
   protected readonly config = APP_CONFIG;
 
-  onToggle(): void {
-    this.toggleRun.emit();
+  onToggleSound(): void {
+    this.toggleSound.emit();
+  }
+
+  onOpenSettings(): void {
+    this.openSettings.emit();
+  }
+
+  onReset(): void {
+    this.reset.emit();
   }
 }

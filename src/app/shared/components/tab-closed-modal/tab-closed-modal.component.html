@@ -1,0 +1,35 @@
+<div class="modal-backdrop" (click)="onBackdropClick($event)">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div class="modal-title-row">
+        <span class="warning-badge-icon">⚠️</span>
+        <h2 class="modal-title">Відстеження зупинено</h2>
+      </div>
+      <button
+        type="button"
+        class="btn-close"
+        aria-label="Закрити"
+        (click)="onClose()"
+      >
+        ✕
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <p class="modal-desc">
+        Вкладку із записом онлайн було закрито, тому таймер пошуку слотів автоматично зупинився.
+      </p>
+      <div class="info-box">
+        <span class="info-tip">
+          Щоб продовжити відстеження, відкрийте сторінку «Запис онлайн» на сайті та знову натисніть <strong>Старт</strong>.
+        </span>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn-confirm" (click)="onClose()">
+        Зрозуміло
+      </button>
+    </div>
+  </div>
+</div>

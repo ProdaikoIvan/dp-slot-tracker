@@ -11,16 +11,30 @@
           </p>
         }
       </div>
+
+      <button
+        type="button"
+        class="btn-toggle-tracker"
+        [class.is-running]="isRunning()"
+        (click)="onToggleTracker()"
+        [attr.title]="isRunning() ? 'Зупинити відстеження' : 'Запустити відстеження'"
+        [attr.aria-label]="isRunning() ? 'Зупинити відстеження' : 'Запустити відстеження'"
+      >
+        @if (isRunning()) {
+          <app-icon name="stop" [size]="16" />
+        } @else {
+          <app-icon name="play" [size]="16" />
+        }
+      </button>
     </div>
 
-    <div class="tracking-status">
-      <span class="status-dot"></span>
-      <span>Відстеження активне для цього центру</span>
-    </div>
+    @if (!isOnQueueTab() && targetTabId()) {
+      <button type="button" class="btn-focus-tab" (click)="focusQueueTab()">
+        <span>Перейти до вкладки запису</span>
+        <app-icon name="external-link" [size]="13" />
+      </button>
+    }
 
-    <button type="button" class="btn-queue" (click)="openQueue()">
-      <span>Запис онлайн (Е-черга)</span>
-      <app-icon name="external-link" [size]="14" />
-    </button>
+    <app-tracker-panel class="card-tracker-panel" />
   </div>
 }
