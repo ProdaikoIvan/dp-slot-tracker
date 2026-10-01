@@ -1,15 +1,16 @@
 import { Component, computed, inject } from '@angular/core';
 import { ActiveTabService } from '../../core/services/active-tab.service';
 import { SlotTrackerService } from '../../core/services/slot-tracker.service';
-import { IconComponent } from '../../shared/components/icon/icon.component';
-import { TrackerPanelComponent } from './components/tracker-panel/tracker-panel.component';
 import { SUPPORTED_CENTERS } from '../../core/constants/centers.constants';
 import { SupportedCenter } from '../../core/models/center.model';
+import { IconComponent } from '../../shared/components/icon/icon.component';
+import { IntervalSelectorComponent } from './components/interval-selector/interval-selector.component';
+import { FoundSlotsComponent } from './components/found-slots/found-slots.component';
 
 @Component({
   selector: 'app-active-center',
   standalone: true,
-  imports: [IconComponent, TrackerPanelComponent],
+  imports: [IconComponent, IntervalSelectorComponent, FoundSlotsComponent],
   templateUrl: './active-center.component.html',
   styleUrl: './active-center.component.scss',
 })
@@ -17,7 +18,7 @@ export class ActiveCenterCardComponent {
   private readonly tabService = inject(ActiveTabService);
   private readonly trackerService = inject(SlotTrackerService);
 
-  readonly isRunning = this.trackerService.isRunning;
+  // --- Center info ---
   readonly isOnQueueTab = this.tabService.isCenterSupported;
   readonly targetTabId = this.trackerService.targetTabId;
 
@@ -30,7 +31,7 @@ export class ActiveCenterCardComponent {
       const match = SUPPORTED_CENTERS.find(
         (c) =>
           name.toLowerCase().includes(c.name.toLowerCase()) ||
-          name.toLowerCase().includes(c.subdomain)
+          name.toLowerCase().includes(c.subdomain),
       );
       if (match) return match;
     }
@@ -47,8 +48,22 @@ export class ActiveCenterCardComponent {
     };
   });
 
+  // --- Tracker state (previously proxied through TrackerPanelComponent) ---
+  readonly isRunning = this.trackerService.isRunning;
+  readonly status = this.trackerService.status;
+  readonly currentInterval = this.trackerService.intervalSeconds;
+  readonly remainingSeconds = this.trackerService.remainingSeconds;
+  readonly foundDays = this.trackerService.foundDays;
+  readonly lastMessage = this.trackerService.lastMessage;
+  readonly centerName = this.trackerService.centerName;
+
+  // --- Actions ---
   onToggleTracker(): void {
     this.trackerService.toggle();
+  }
+
+  setInterval(seconds: number): void {
+    this.trackerService.setIntervalSeconds(seconds);
   }
 
   focusQueueTab(): void {

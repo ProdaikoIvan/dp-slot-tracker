@@ -4,18 +4,12 @@ import {
   TrackerPersistedState,
   TrackerStatus,
 } from '../models/tracker.model';
-import { QueueCheckerService } from './queue-checker.service';
-import { SoundNotificationService } from './sound-notification.service';
-import { BadgeService } from './badge.service';
 import { TrackerStorageService } from './tracker-storage.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class SlotTrackerService implements OnDestroy {
-  private readonly checkerService = inject(QueueCheckerService);
-  private readonly soundService = inject(SoundNotificationService);
-  private readonly badgeService = inject(BadgeService);
   private readonly storageService = inject(TrackerStorageService);
 
   readonly status = signal<TrackerStatus>('idle');
@@ -27,60 +21,56 @@ export class SlotTrackerService implements OnDestroy {
   readonly targetTabId = signal<number | null>(null);
   readonly showTabClosedModal = signal<boolean>(false);
   readonly centerName = signal<string | null>(null);
+  readonly soundEnabled = signal<boolean>(true);
 
-  private timerId: ReturnType<typeof setInterval> | null = null;
-  private isChecking = false;
+  private nextCheckTimestamp: number | null = null;
+  private uiTickerId: ReturnType<typeof setInterval> | null = null;
   private unwatchStorage: (() => void) | null = null;
 
   constructor() {
     void this.loadPersistedState();
+    this.sendMessage({ type: 'POPUP_OPENED' });
     this.unwatchStorage = this.storageService.watchChanges((newState) => {
       this.syncFromState(newState);
     });
+
+    this.uiTickerId = setInterval(() => {
+      if (this.isRunning() && this.nextCheckTimestamp) {
+        const remaining = Math.max(0, Math.ceil((this.nextCheckTimestamp - Date.now()) / 1000));
+        this.remainingSeconds.set(remaining);
+        if (remaining <= 0 && this.status() === 'waiting') {
+          this.sendMessage({ type: 'TIME_TO_CHECK' });
+        }
+      }
+    }, 1000);
   }
 
-  start(): void {
+  async start(): Promise<void> {
     if (this.isRunning()) return;
 
-    this.foundDays.set([]);
-    this.lastMessage.set(null);
-    this.showTabClosedModal.set(false);
-    this.remainingSeconds.set(this.intervalSeconds());
+    const activeTabId = await this.getActiveTabId();
+    this.targetTabId.set(activeTabId);
     this.status.set('waiting');
-    this.badgeService.setTimer(this.remainingSeconds());
-    this.startCountdown();
-    void this.savePersistedState();
-    void this.initAndCheck();
-  }
+    this.remainingSeconds.set(this.intervalSeconds());
 
-  private async initAndCheck(): Promise<void> {
-    const activeId = await this.checkerService.getActiveTabId();
-    if (!this.isRunning()) return;
-
-    this.targetTabId.set(activeId);
-    void this.savePersistedState();
-    await this.performCheck();
+    this.sendMessage({
+      type: 'START_TRACKER',
+      targetTabId: activeTabId,
+      intervalSeconds: this.intervalSeconds(),
+    });
   }
 
   stop(): void {
-    this.stopCountdown();
-    this.badgeService.clear();
-    this.targetTabId.set(null);
     this.status.set('idle');
     this.remainingSeconds.set(this.intervalSeconds());
-    if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
-      try {
-        chrome.runtime.sendMessage({ type: 'STOP_FLASHING' }).catch?.(() => {});
-      } catch {}
-    }
-    void this.savePersistedState();
+    this.sendMessage({ type: 'STOP_TRACKER' });
   }
 
   toggle(): void {
     if (this.isRunning()) {
       this.stop();
     } else {
-      this.start();
+      void this.start();
     }
   }
 
@@ -89,109 +79,47 @@ export class SlotTrackerService implements OnDestroy {
     if (!this.isRunning()) {
       this.remainingSeconds.set(seconds);
     }
-    void this.savePersistedState();
+    this.sendMessage({ type: 'SET_INTERVAL', intervalSeconds: seconds });
   }
 
   reset(): void {
-    this.stop();
+    this.status.set('idle');
     this.foundDays.set([]);
     this.lastMessage.set(null);
     this.centerName.set(null);
     this.showTabClosedModal.set(false);
     this.intervalSeconds.set(DEFAULT_TRACKER_INTERVAL_SECONDS);
     this.remainingSeconds.set(DEFAULT_TRACKER_INTERVAL_SECONDS);
-    this.badgeService.clear();
-    void this.savePersistedState();
+    this.sendMessage({ type: 'RESET_TRACKER' });
+  }
+
+  toggleSound(): void {
+    const next = !this.soundEnabled();
+    this.soundEnabled.set(next);
+    this.sendMessage({ type: 'TOGGLE_SOUND' });
   }
 
   dismissTabClosedModal(): void {
     this.showTabClosedModal.set(false);
-    void this.savePersistedState();
+    this.sendMessage({ type: 'DISMISS_TAB_CLOSED_MODAL' });
   }
 
-  private startCountdown(): void {
-    this.stopCountdown();
-    this.timerId = setInterval(() => {
-      const sec = this.remainingSeconds();
-      if (sec > 1) {
-        const next = sec - 1;
-        this.remainingSeconds.set(next);
-        this.badgeService.setTimer(next);
-      } else {
-        this.stopCountdown();
-        this.remainingSeconds.set(0);
-        void this.performCheck();
-      }
-    }, 1000);
-  }
-
-  private stopCountdown(): void {
-    if (this.timerId !== null) {
-      clearInterval(this.timerId);
-      this.timerId = null;
+  private sendMessage(message: unknown): void {
+    if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+      try {
+        chrome.runtime.sendMessage(message).catch?.(() => {});
+      } catch {}
     }
   }
 
-  private async performCheck(): Promise<void> {
-    if (this.isChecking) return;
-    this.isChecking = true;
-
+  private async getActiveTabId(): Promise<number | null> {
+    if (typeof chrome === 'undefined' || !chrome.tabs?.query) return null;
     try {
-      this.status.set('checking');
-
-      const result = await this.checkerService.checkActiveTab(this.targetTabId() ?? undefined);
-      if (this.status() === 'idle') return;
-
-      if (result.success) {
-        if (result.centerName) this.centerName.set(result.centerName);
-
-        if (result.days.length > 0) {
-          this.stopCountdown();
-          this.remainingSeconds.set(0);
-          this.foundDays.set([...result.days]);
-          this.status.set('found');
-          const serviceTitle = result.serviceName ? ` для «${result.serviceName}»` : '';
-          this.lastMessage.set(`Знайдено вільні дати (${result.days.length})${serviceTitle}`);
-          this.badgeService.setFound();
-          this.soundService.playSuccess();
-        } else {
-          this.foundDays.set([]);
-          this.status.set('waiting');
-          this.lastMessage.set('Вільних дат наразі немає');
-          this.remainingSeconds.set(this.intervalSeconds());
-          this.badgeService.setTimer(this.remainingSeconds());
-          this.startCountdown();
-        }
-      } else {
-        this.status.set('error');
-        this.lastMessage.set(result.error || 'Помилка перевірки');
-        this.stopCountdown();
-        this.badgeService.clear();
-        this.targetTabId.set(null);
-      }
-
-      void this.savePersistedState();
-    } finally {
-      this.isChecking = false;
+      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+      return tabs[0]?.id ?? null;
+    } catch {
+      return null;
     }
-  }
-
-  private toPersistedState(): TrackerPersistedState {
-    return {
-      isRunning: this.isRunning(),
-      status: this.status(),
-      intervalSeconds: this.intervalSeconds(),
-      targetTabId: this.targetTabId(),
-      foundDays: this.foundDays(),
-      lastMessage: this.lastMessage(),
-      nextCheckTimestamp: this.isRunning() ? Date.now() + this.remainingSeconds() * 1000 : null,
-      tabClosedNotice: this.showTabClosedModal(),
-      centerName: this.centerName(),
-    };
-  }
-
-  async savePersistedState(): Promise<void> {
-    await this.storageService.save(this.toPersistedState());
   }
 
   async loadPersistedState(): Promise<void> {
@@ -201,44 +129,29 @@ export class SlotTrackerService implements OnDestroy {
 
   private syncFromState(state: TrackerPersistedState): void {
     if (state.intervalSeconds) this.intervalSeconds.set(state.intervalSeconds);
+    this.status.set(state.status || 'idle');
     this.foundDays.set(state.foundDays || []);
     this.lastMessage.set(state.lastMessage || null);
     this.targetTabId.set(state.targetTabId || null);
     this.centerName.set(state.centerName || null);
-    if (state.tabClosedNotice) this.showTabClosedModal.set(true);
+    if (state.soundEnabled !== undefined) this.soundEnabled.set(state.soundEnabled);
+    this.showTabClosedModal.set(Boolean(state.tabClosedNotice));
 
-    if (state.status === 'found') {
-      this.stopCountdown();
-      this.remainingSeconds.set(0);
-      this.status.set('found');
-      this.badgeService.setFound();
-      return;
-    }
+    this.nextCheckTimestamp = state.nextCheckTimestamp || null;
 
-    if (!state.isRunning) {
-      this.stopCountdown();
-      this.status.set(state.status);
-      return;
-    }
-
-    if (state.nextCheckTimestamp) {
-      const remainingSec = Math.max(1, Math.ceil((state.nextCheckTimestamp - Date.now()) / 1000));
-      this.status.set(state.status);
-      this.remainingSeconds.set(remainingSec);
-      this.badgeService.setTimer(remainingSec);
-      this.startCountdown();
-
-      if (remainingSec === 1) {
-        void this.performCheck();
-      }
+    if (state.nextCheckTimestamp && state.isRunning) {
+      const remaining = Math.max(0, Math.ceil((state.nextCheckTimestamp - Date.now()) / 1000));
+      this.remainingSeconds.set(remaining);
+    } else if (!state.isRunning) {
+      this.remainingSeconds.set(this.intervalSeconds());
     }
   }
 
   ngOnDestroy(): void {
-    this.stopCountdown();
-    this.unwatchStorage?.();
-    if (!this.isRunning() && this.status() !== 'found') {
-      this.badgeService.clear();
+    if (this.uiTickerId !== null) {
+      clearInterval(this.uiTickerId);
+      this.uiTickerId = null;
     }
+    this.unwatchStorage?.();
   }
 }

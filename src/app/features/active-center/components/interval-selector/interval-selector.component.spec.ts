@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { IntervalSelectorComponent } from './interval-selector.component';
 
 describe('IntervalSelectorComponent', () => {
@@ -16,14 +16,14 @@ describe('IntervalSelectorComponent', () => {
     expect(fixture.componentInstance).toBeTruthy();
   });
 
-  it('should render all 4 interval options and mark active', () => {
+  it('should render all interval options and mark active', () => {
     const fixture = TestBed.createComponent(IntervalSelectorComponent);
     fixture.componentRef.setInput('currentInterval', 120);
     fixture.detectChanges();
 
     const buttons = fixture.nativeElement.querySelectorAll('.chip-btn');
-    expect(buttons.length).toBe(4);
-    expect(buttons[1].classList.contains('chip-active')).toBe(true);
+    expect(buttons.length).toBe(5);
+    expect(buttons[2].classList.contains('chip-active')).toBe(true);
   });
 
   it('should emit intervalChange on click', () => {
@@ -37,7 +37,7 @@ describe('IntervalSelectorComponent', () => {
     });
 
     const buttons = fixture.nativeElement.querySelectorAll('.chip-btn');
-    buttons[2].click();
+    buttons[3].click();
     expect(emitted).toBe(180);
   });
 });

@@ -16,16 +16,4 @@ export class HeaderComponent {
   readonly reset = output<void>();
 
   protected readonly config = APP_CONFIG;
-
-  onToggleSound(): void {
-    this.toggleSound.emit();
-  }
-
-  onOpenSettings(): void {
-    this.openSettings.emit();
-  }
-
-  onReset(): void {
-    this.reset.emit();
-  }
 }

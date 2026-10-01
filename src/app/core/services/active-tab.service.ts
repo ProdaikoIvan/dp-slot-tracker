@@ -1,6 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import { TARGET_SITE } from '../constants/app.constants';
-import { findSupportedCenter, SUPPORTED_CENTERS } from '../constants/centers.constants';
+import { SUPPORTED_CENTERS } from '../constants/centers.constants';
+import { findSupportedCenter } from '../utils/center.utils';
 import { SupportedCenter } from '../models/center.model';
 
 @Injectable({

@@ -12,9 +12,6 @@ export const TARGET_SITE = {
 
 export const STORAGE_KEYS = {
   settings: 'dp_slot_tracker_settings',
-  slots: 'dp_slot_tracker_slots',
-  lastSync: 'dp_slot_tracker_last_sync',
-  sound: 'dp_slot_tracker_sound',
   trackerState: 'dp_slot_tracker_state',
 } as const;
 

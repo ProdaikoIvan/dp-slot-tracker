@@ -8,5 +8,3 @@ export interface SupportedCenter {
   address?: string;
   queueUrl: string;
 }
-
-export type DetectedCenter = SupportedCenter;

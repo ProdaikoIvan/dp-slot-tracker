@@ -1,5 +1,6 @@
 @if (center(); as c) {
   <div class="active-center-card">
+    <!-- Center header -->
     <div class="center-header">
       <span class="flag-icon">{{ c.flag }}</span>
       <div class="center-meta">
@@ -35,6 +36,67 @@
       </button>
     }
 
-    <app-tracker-panel class="card-tracker-panel" />
+    <!-- Tracker panel (inlined) -->
+    <div class="tracker-panel">
+      <app-interval-selector
+        [currentInterval]="currentInterval()"
+        (intervalChange)="setInterval($event)"
+      />
+
+      <div
+        class="status-box"
+        [class.is-running]="isRunning()"
+        [class.is-found]="status() === 'found'"
+        [class.is-error]="status() === 'error'"
+      >
+        <div class="status-row-top">
+          <div class="status-title-group">
+            <span class="status-dot"></span>
+            <span class="status-title">
+              @if (status() === 'found') {
+                Знайдено вільні дати!
+              } @else if (status() === 'checking') {
+                Перевірка слотів...
+              } @else if (status() === 'error') {
+                Увага
+              } @else if (isRunning()) {
+                Перевірка активна
+              } @else {
+                Очікує запуску
+              }
+            </span>
+          </div>
+
+          <div class="status-badges">
+            @if (isRunning() && status() !== 'found' && status() !== 'error') {
+              <span class="timer-badge">{{ remainingSeconds() }}s</span>
+            }
+          </div>
+        </div>
+
+        <div class="status-row-message">
+          <p class="status-hint">
+            @if (status() === 'found') {
+              Доступно дат: {{ foundDays().length }}
+            } @else if (lastMessage()) {
+              {{ lastMessage() }}
+            } @else if (isRunning()) {
+              Очікування наступного циклу
+            } @else {
+              Натисніть Start для відстеження
+            }
+          </p>
+        </div>
+      </div>
+
+      @if (isRunning()) {
+        <div class="tracker-warning-banner">
+          <span class="warning-icon">⚠️</span>
+          <span class="warning-text">Не закривайте вкладку та не переходьте на інші сторінки</span>
+        </div>
+      }
+
+      <app-found-slots [days]="foundDays()" [centerName]="centerName()" />
+    </div>
   </div>
 }

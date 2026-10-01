@@ -15,7 +15,7 @@
     <button
       type="button"
       class="btn-icon"
-      (click)="onReset()"
+      (click)="reset.emit()"
       title="Скинути до початкового стану"
       aria-label="Скинути до початкового стану"
     >
@@ -26,7 +26,7 @@
       type="button"
       class="btn-icon"
       [class.is-active]="isSoundEnabled()"
-      (click)="onToggleSound()"
+      (click)="toggleSound.emit()"
       [attr.title]="isSoundEnabled() ? 'Вимкнути звук' : 'Увімкнути звук'"
       [attr.aria-label]="isSoundEnabled() ? 'Вимкнути звук' : 'Увімкнути звук'"
     >
@@ -40,7 +40,7 @@
     <button
       type="button"
       class="btn-icon"
-      (click)="onOpenSettings()"
+      (click)="openSettings.emit()"
       title="Налаштування"
       aria-label="Налаштування"
     >

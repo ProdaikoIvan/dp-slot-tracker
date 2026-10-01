@@ -37,15 +37,7 @@
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-pill: 9999px;
-}
 
-// SCSS змінні для швидкого використання
-$color-primary: var(--color-primary);
-$bg-app: var(--bg-app);
-$bg-surface: var(--bg-surface);
-$border-subtle: var(--border-subtle);
-$text-primary: var(--text-primary);
-$text-secondary: var(--text-secondary);
-$radius-sm: var(--radius-sm);
-$radius-md: var(--radius-md);
-$radius-pill: var(--radius-pill);
+  // Переходи
+  --transition-fast: 0.15s ease;
+}

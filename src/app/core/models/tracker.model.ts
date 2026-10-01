@@ -24,4 +24,5 @@ export interface TrackerPersistedState {
   nextCheckTimestamp: number | null;
   tabClosedNotice?: boolean;
   centerName?: string | null;
+  soundEnabled?: boolean;
 }

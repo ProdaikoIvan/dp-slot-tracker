@@ -6,7 +6,6 @@ import { SettingsModalComponent } from './features/settings/settings-modal.compo
 import { TabClosedModalComponent } from './shared/components/tab-closed-modal/tab-closed-modal.component';
 import { ActiveTabService } from './core/services/active-tab.service';
 import { SlotTrackerService } from './core/services/slot-tracker.service';
-import { SoundNotificationService } from './core/services/sound-notification.service';
 
 @Component({
   selector: 'app-root',
@@ -24,11 +23,10 @@ import { SoundNotificationService } from './core/services/sound-notification.ser
 export class AppComponent {
   private readonly tabService = inject(ActiveTabService);
   private readonly trackerService = inject(SlotTrackerService);
-  private readonly soundService = inject(SoundNotificationService);
 
   readonly isCenterSupported = this.tabService.isCenterSupported;
   readonly isRunning = this.trackerService.isRunning;
-  readonly isSoundEnabled = this.soundService.isEnabled;
+  readonly isSoundEnabled = this.trackerService.soundEnabled;
   readonly isSettingsOpen = signal<boolean>(false);
   readonly showTabClosedModal = this.trackerService.showTabClosedModal;
 
@@ -41,7 +39,7 @@ export class AppComponent {
   });
 
   toggleSound(): void {
-    this.soundService.toggle();
+    this.trackerService.toggleSound();
   }
 
   toggleSettings(): void {

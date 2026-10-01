@@ -1,88 +1,24 @@
-@use '../../../../styles/variables' as *;
 
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background-color: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(2px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 16px;
-  animation: fadeIn 0.15s ease-out;
-}
+// Специфічні стилі tab-closed-modal (спільні modal-* стилі в _modal.scss)
 
 .modal-card {
-  width: 100%;
   max-width: 330px;
-  background-color: var(--bg-surface);
-  border: 1px solid var(--color-amber-border);
-  border-radius: var(--radius-md);
-  padding: 18px 16px;
+  border-color: var(--color-amber-border);
   box-shadow: 0 16px 32px rgba(0, 0, 0, 0.5);
-  display: flex;
-  flex-direction: column;
   gap: 14px;
-  animation: slideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.modal-title-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.warning-badge-icon {
-  font-size: 16px;
-  line-height: 1;
-}
-
-.modal-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--text-primary);
-  line-height: 1.2;
-  margin: 0;
-}
-
-.btn-close {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.15s ease;
-
-  &:hover {
-    color: var(--text-primary);
-    background-color: var(--bg-surface-elevated);
-  }
 }
 
 .modal-body {
-  display: flex;
-  flex-direction: column;
   gap: 10px;
 }
 
 .modal-desc {
   font-size: 13px;
-  color: var(--text-secondary);
-  line-height: 1.45;
-  margin: 0;
+}
+
+.warning-badge-icon {
+  font-size: 16px;
+  line-height: 1;
 }
 
 .info-box {
@@ -103,11 +39,7 @@
 }
 
 .modal-footer {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
   padding-top: 6px;
-  border-top: 1px solid var(--border-divider);
 }
 
 .btn-confirm {
@@ -125,24 +57,5 @@
   &:hover {
     background-color: var(--color-primary-hover);
     box-shadow: 0 0 10px var(--color-primary-glow);
-  }
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes slideUp {
-  from {
-    transform: translateY(12px) scale(0.97);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0) scale(1);
   }
 }

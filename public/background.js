@@ -1,10 +1,33 @@
-// Background Service Worker for DP Slot Tracker (Chrome Manifest V3)
+// ═══════════════════════════════════════════════════════════════
+// Background Service Worker — DP Slot Tracker (Chrome MV3)
+// ═══════════════════════════════════════════════════════════════
 
 const STORAGE_KEY = 'dp_slot_tracker_state';
 const ALARM_NAME = 'dp_slot_check';
 const DEFAULT_SERVICE_ID = '4';
 
+// ───────────────────────────────────────────────────────────────
+// 1. Storage helpers (DRY state read/write)
+// ───────────────────────────────────────────────────────────────
+
+async function getState() {
+  const data = await chrome.storage.local.get(STORAGE_KEY);
+  return data?.[STORAGE_KEY] ?? null;
+}
+
+async function updateState(patch) {
+  const current = (await getState()) || {};
+  await chrome.storage.local.set({
+    [STORAGE_KEY]: { ...current, ...patch },
+  });
+}
+
+// ───────────────────────────────────────────────────────────────
+// 2. Badge management
+// ───────────────────────────────────────────────────────────────
+
 let badgeInterval = null;
+let flashBadgeInterval = null;
 
 function formatBadgeText(seconds) {
   if (seconds <= 0) return '';
@@ -12,6 +35,13 @@ function formatBadgeText(seconds) {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
   return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+function stopBadgeCountdown() {
+  if (badgeInterval !== null) {
+    clearInterval(badgeInterval);
+    badgeInterval = null;
+  }
 }
 
 function startBadgeCountdown(nextTimestamp) {
@@ -22,10 +52,10 @@ function startBadgeCountdown(nextTimestamp) {
     const remaining = Math.max(0, Math.ceil((nextTimestamp - Date.now()) / 1000));
     if (remaining <= 0) {
       stopBadgeCountdown();
+      void triggerBackgroundCheck();
       return;
     }
-    const text = formatBadgeText(remaining);
-    chrome.action.setBadgeText({ text });
+    chrome.action.setBadgeText({ text: formatBadgeText(remaining) });
     chrome.action.setBadgeBackgroundColor({ color: '#82aaff' });
     if ('setBadgeTextColor' in chrome.action) {
       chrome.action.setBadgeTextColor({ color: '#0f172a' });
@@ -36,14 +66,12 @@ function startBadgeCountdown(nextTimestamp) {
   badgeInterval = setInterval(update, 1000);
 }
 
-function stopBadgeCountdown() {
-  if (badgeInterval !== null) {
-    clearInterval(badgeInterval);
-    badgeInterval = null;
+function stopFlashingBadge() {
+  if (flashBadgeInterval !== null) {
+    clearInterval(flashBadgeInterval);
+    flashBadgeInterval = null;
   }
 }
-
-let flashBadgeInterval = null;
 
 function startFlashingBadge() {
   stopFlashingBadge();
@@ -57,77 +85,69 @@ function startFlashingBadge() {
 
   flashBadgeInterval = setInterval(() => {
     toggle = !toggle;
-    const color = toggle ? '#f59e0b' : '#00d27a';
     chrome.action.setBadgeText({ text: 'SLOT' });
-    chrome.action.setBadgeBackgroundColor({ color });
+    chrome.action.setBadgeBackgroundColor({ color: toggle ? '#f59e0b' : '#00d27a' });
   }, 600);
 }
 
-function stopFlashingBadge() {
-  if (flashBadgeInterval !== null) {
-    clearInterval(flashBadgeInterval);
-    flashBadgeInterval = null;
-  }
+async function clearBadgeAndAlarm() {
+  stopBadgeCountdown();
+  await chrome.alarms.clear(ALARM_NAME);
+  await chrome.action.setBadgeText({ text: '' });
 }
 
-// 1. Listen for tab closure
+// ───────────────────────────────────────────────────────────────
+// 3. Tab lifecycle listeners
+// ───────────────────────────────────────────────────────────────
+
+/** When tracked tab is closed — stop tracker and show notice */
 chrome.tabs.onRemoved.addListener(async (closedTabId) => {
   try {
-    const data = await chrome.storage.local.get(STORAGE_KEY);
-    const state = data?.[STORAGE_KEY];
+    const state = await getState();
+    if (!state || state.targetTabId !== closedTabId) return;
 
-    if (state && state.targetTabId === closedTabId) {
-      console.log('[DP Background] Tracked tab was closed:', closedTabId);
-      stopBadgeCountdown();
-      await chrome.alarms.clear(ALARM_NAME);
-      await chrome.action.setBadgeText({ text: '' });
-      await chrome.storage.local.set({
-        [STORAGE_KEY]: {
-          ...state,
-          isRunning: false,
-          status: 'idle',
-          lastMessage: null,
-          tabClosedNotice: true,
-          targetTabId: null,
-          nextCheckTimestamp: null,
-        },
-      });
-    }
+    console.log('[DP Background] Tracked tab was closed:', closedTabId);
+    await clearBadgeAndAlarm();
+    await updateState({
+      isRunning: false,
+      status: 'idle',
+      lastMessage: null,
+      tabClosedNotice: true,
+      targetTabId: null,
+      nextCheckTimestamp: null,
+    });
   } catch (err) {
     console.error('[DP Background] Error on tab close:', err);
   }
 });
 
-// 2. Listen for tab navigation: if user leaves /solutions/e-queue, stop and show error
+/** When tracked tab navigates away from queue page — stop with error */
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
   if (!changeInfo.url) return;
 
   try {
-    const data = await chrome.storage.local.get(STORAGE_KEY);
-    const state = data?.[STORAGE_KEY];
+    const state = await getState();
+    if (!state || state.targetTabId !== tabId) return;
+    if (changeInfo.url.includes('/solutions/e-queue')) return;
 
-    if (state && state.targetTabId === tabId && !changeInfo.url.includes('/solutions/e-queue')) {
-      console.log('[DP Background] Tracked tab navigated away:', changeInfo.url);
-      stopBadgeCountdown();
-      await chrome.alarms.clear(ALARM_NAME);
-      await chrome.action.setBadgeText({ text: '' });
-      await chrome.storage.local.set({
-        [STORAGE_KEY]: {
-          ...state,
-          isRunning: false,
-          status: 'error',
-          lastMessage: 'Ви перейшли зі сторінки черги. Відкрийте "Запис онлайн"',
-          targetTabId: null,
-          nextCheckTimestamp: null,
-        },
-      });
-    }
+    console.log('[DP Background] Tracked tab navigated away:', changeInfo.url);
+    await clearBadgeAndAlarm();
+    await updateState({
+      isRunning: false,
+      status: 'error',
+      lastMessage: 'Ви перейшли зі сторінки черги. Відкрийте "Запис онлайн"',
+      targetTabId: null,
+      nextCheckTimestamp: null,
+    });
   } catch (err) {
     console.error('[DP Background] Error on tab update:', err);
   }
 });
 
-// 3. Listen for storage changes: manage background alarm & badge countdown
+// ───────────────────────────────────────────────────────────────
+// 4. Storage watcher — sync alarm & badge with state changes
+// ───────────────────────────────────────────────────────────────
+
 chrome.storage.onChanged.addListener((changes, areaName) => {
   if (areaName !== 'local' || !changes[STORAGE_KEY]) return;
 
@@ -138,18 +158,20 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
     return;
   }
 
-  // Start badge countdown timer for live toolbar updates
   if (newState.nextCheckTimestamp) {
     startBadgeCountdown(newState.nextCheckTimestamp);
   }
 
-  // Schedule alarm for periodic checks
   const intervalMinutes = Math.max(1, (newState.intervalSeconds || 60) / 60);
   chrome.alarms.create(ALARM_NAME, {
     delayInMinutes: intervalMinutes,
     periodInMinutes: intervalMinutes,
   });
 });
+
+// ───────────────────────────────────────────────────────────────
+// 5. Background slot check logic
+// ───────────────────────────────────────────────────────────────
 
 let isCheckingInBackground = false;
 
@@ -158,148 +180,98 @@ async function triggerBackgroundCheck() {
   isCheckingInBackground = true;
 
   try {
-    const data = await chrome.storage.local.get(STORAGE_KEY);
-    const state = data?.[STORAGE_KEY];
+    const state = await getState();
 
     if (!state || !state.isRunning || !state.targetTabId) {
-      stopBadgeCountdown();
-      await chrome.alarms.clear(ALARM_NAME);
+      await clearBadgeAndAlarm();
       return;
     }
 
-    // Indicate check in progress
     chrome.action.setBadgeText({ text: '...' });
+    await updateState({
+      status: 'checking',
+      lastMessage: 'Перевірка слотів...',
+    });
 
     // Verify tab still exists
     let tab;
     try {
       tab = await chrome.tabs.get(state.targetTabId);
     } catch {
-      stopBadgeCountdown();
-      await chrome.action.setBadgeText({ text: '' });
-      await chrome.alarms.clear(ALARM_NAME);
-      await chrome.storage.local.set({
-        [STORAGE_KEY]: {
-          ...state,
-          isRunning: false,
-          status: 'idle',
-          lastMessage: null,
-          tabClosedNotice: true,
-          targetTabId: null,
-          nextCheckTimestamp: null,
-        },
+      await clearBadgeAndAlarm();
+      await updateState({
+        isRunning: false,
+        status: 'idle',
+        lastMessage: null,
+        tabClosedNotice: true,
+        targetTabId: null,
+        nextCheckTimestamp: null,
       });
       return;
     }
 
+    // Tab navigated away from queue
     if (!tab?.url || !tab.url.includes('/solutions/e-queue')) {
-      stopBadgeCountdown();
-      await chrome.action.setBadgeText({ text: '' });
-      await chrome.alarms.clear(ALARM_NAME);
-      await chrome.storage.local.set({
-        [STORAGE_KEY]: {
-          ...state,
-          isRunning: false,
-          status: 'error',
-          lastMessage: 'Ви перейшли зі сторінки черги. Відкрийте "Запис онлайн"',
-          targetTabId: null,
-          nextCheckTimestamp: null,
-        },
+      await clearBadgeAndAlarm();
+      await updateState({
+        isRunning: false,
+        status: 'error',
+        lastMessage: 'Ви перейшли зі сторінки черги. Відкрийте "Запис онлайн"',
+        targetTabId: null,
+        nextCheckTimestamp: null,
       });
       return;
     }
 
-    // Execute check in the page context
+    const attempt = state.checkAttempt || 0;
+    const isFirstCheck = attempt === 0;
+
     const results = await chrome.scripting.executeScript({
       target: { tabId: state.targetTabId },
       func: inPageCheckDaysScript,
-      args: [DEFAULT_SERVICE_ID],
+      args: [DEFAULT_SERVICE_ID, isFirstCheck],
     });
 
     const result = results?.[0]?.result;
     if (!result) return;
 
-    if (result.success) {
-      if (result.days && result.days.length > 0) {
-        // Slots found!
-        stopBadgeCountdown();
-        await chrome.alarms.clear(ALARM_NAME);
-        startFlashingBadge();
+    if (result.success && result.days?.length > 0) {
+      // ✅ Slots found!
+      await clearBadgeAndAlarm();
+      startFlashingBadge();
+      void playOffscreenAudio();
+      showSlotNotification(result);
 
-        // 1. Гарантований звуковий сигнал через Offscreen Document
-        void playOffscreenAudio();
+      await updateState({
+        isRunning: false,
+        status: 'found',
+        foundDays: result.days,
+        centerName: result.centerName || null,
+        serviceName: result.serviceName || null,
+        availableServices: result.availableServices || [],
+        lastMessage: `Знайдено дати (${result.days.length}) для ${result.serviceName || 'Оформлення документів'}`,
+        checkAttempt: 0,
+        nextCheckTimestamp: null,
+      });
+    } else if (result.success) {
+      // No slots yet — schedule next check
+      const intervalSec = state.intervalSeconds || 60;
+      const nextTimestamp = Date.now() + intervalSec * 1000;
+      startBadgeCountdown(nextTimestamp);
 
-        // 2. Системне спливаюче сповіщення Windows/Chrome із вказанням центру та послуги
-        const centerTitle = result.centerName || 'ДП Документ';
-        const serviceTitle = result.serviceName || 'Оформлення документів';
-        const notifId = 'dp_slots_' + Date.now();
-        try {
-          if (chrome.notifications?.create) {
-            chrome.notifications.create(
-              notifId,
-              {
-                type: 'basic',
-                iconUrl: chrome.runtime.getURL('icons/icon-128.png'),
-                title: `🎉 Знайдено слоти: ${centerTitle}`,
-                message: `Послуга: ${serviceTitle}\nДати: ${result.days.join(', ')}\nНатисніть тут, щоб відкрити чергу!`,
-                priority: 2,
-                requireInteraction: true,
-              },
-              (createdId) => {
-                if (chrome.runtime.lastError) {
-                  console.error('[DP Background] Notification error:', chrome.runtime.lastError);
-                } else {
-                  console.log('[DP Background] Notification created:', createdId);
-                }
-              }
-            );
-          }
-        } catch (notifErr) {
-          console.error('[DP Background] Notification error:', notifErr);
-        }
-
-        await chrome.storage.local.set({
-          [STORAGE_KEY]: {
-            ...state,
-            isRunning: false,
-            status: 'found',
-            foundDays: result.days,
-            centerName: result.centerName || null,
-            serviceName: result.serviceName || null,
-            availableServices: result.availableServices || [],
-            lastMessage: `Знайдено дати (${result.days.length}) для ${serviceTitle}`,
-            checkCount: (state.checkCount || 0) + 1,
-            nextCheckTimestamp: null,
-          },
-        });
-      } else {
-        // No slots yet, schedule next timestamp
-        const intervalSec = state.intervalSeconds || 60;
-        const nextTimestamp = Date.now() + intervalSec * 1000;
-        startBadgeCountdown(nextTimestamp);
-
-        await chrome.storage.local.set({
-          [STORAGE_KEY]: {
-            ...state,
-            status: 'waiting',
-            foundDays: [],
-            lastMessage: 'Вільних дат наразі немає',
-            checkCount: (state.checkCount || 0) + 1,
-            nextCheckTimestamp: nextTimestamp,
-          },
-        });
-      }
+      await updateState({
+        status: 'waiting',
+        foundDays: [],
+        lastMessage: 'Вільних дат наразі немає',
+        checkAttempt: attempt + 1,
+        nextCheckTimestamp: nextTimestamp,
+      });
     } else if (result.error) {
-      stopBadgeCountdown();
-      await chrome.action.setBadgeText({ text: '' });
-      await chrome.alarms.clear(ALARM_NAME);
-      await chrome.storage.local.set({
-        [STORAGE_KEY]: {
-          ...state,
-          status: 'error',
-          lastMessage: result.error,
-          nextCheckTimestamp: null,
-        },
+      await clearBadgeAndAlarm();
+      await updateState({
+        status: 'error',
+        lastMessage: result.error,
+        nextCheckTimestamp: null,
       });
     }
   } catch (err) {
@@ -309,16 +281,22 @@ async function triggerBackgroundCheck() {
   }
 }
 
-// 4. Listen for alarm: perform background check on target tab
+// ───────────────────────────────────────────────────────────────
+// 6. Alarm listener
+// ───────────────────────────────────────────────────────────────
+
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === ALARM_NAME) {
     void triggerBackgroundCheck();
   }
 });
 
-// 5. Listen for messages from content script
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message?.type === 'BADGE_TICK' && typeof message.text === 'string') {
+// ───────────────────────────────────────────────────────────────
+// 7. Message handlers (popup ↔ background communication)
+// ───────────────────────────────────────────────────────────────
+
+const MESSAGE_HANDLERS = {
+  BADGE_TICK: (message, sendResponse) => {
     if (flashBadgeInterval !== null) {
       sendResponse?.({ success: false });
       return;
@@ -329,7 +307,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       chrome.action.setBadgeTextColor({ color: '#0f172a' });
     }
     sendResponse?.({ success: true });
-  } else if (message?.type === 'TIME_TO_CHECK') {
+  },
+
+  TIME_TO_CHECK: (_, sendResponse) => {
     chrome.storage.local.get(STORAGE_KEY, (data) => {
       const state = data?.[STORAGE_KEY];
       if (state?.status === 'found' || !state?.isRunning) {
@@ -339,21 +319,172 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       void triggerBackgroundCheck();
     });
     sendResponse?.({ success: true });
-  } else if (message?.type === 'STOP_FLASHING') {
+  },
+
+  CHECK_NOW: (_, sendResponse) => {
+    void triggerBackgroundCheck();
+    sendResponse?.({ success: true });
+  },
+
+  START_TRACKER: async (message, sendResponse) => {
+    const targetTabId = message.targetTabId;
+    const intervalSeconds = message.intervalSeconds || 60;
+    const nextCheckTimestamp = Date.now() + intervalSeconds * 1000;
+
+    await updateState({
+      isRunning: true,
+      status: 'waiting',
+      intervalSeconds,
+      targetTabId,
+      foundDays: [],
+      lastMessage: null,
+      tabClosedNotice: false,
+      checkAttempt: 0,
+      nextCheckTimestamp,
+    });
+
+    startBadgeCountdown(nextCheckTimestamp);
+    void triggerBackgroundCheck();
+    sendResponse?.({ success: true });
+  },
+
+  STOP_TRACKER: async (_, sendResponse) => {
+    stopFlashingBadge();
+    await clearBadgeAndAlarm();
+    await updateState({
+      isRunning: false,
+      status: 'idle',
+      targetTabId: null,
+      nextCheckTimestamp: null,
+    });
+    sendResponse?.({ success: true });
+  },
+
+  RESET_TRACKER: async (_, sendResponse) => {
+    stopFlashingBadge();
+    await clearBadgeAndAlarm();
+    await updateState({
+      isRunning: false,
+      status: 'idle',
+      targetTabId: null,
+      foundDays: [],
+      lastMessage: null,
+      centerName: null,
+      tabClosedNotice: false,
+      checkAttempt: 0,
+      intervalSeconds: 60,
+      nextCheckTimestamp: null,
+    });
+    sendResponse?.({ success: true });
+  },
+
+  SET_INTERVAL: async (message, sendResponse) => {
+    await updateState({ intervalSeconds: message.intervalSeconds || 60 });
+    sendResponse?.({ success: true });
+  },
+
+  TOGGLE_SOUND: async (_, sendResponse) => {
+    const state = await getState();
+    const nextSound = state?.soundEnabled !== false ? false : true;
+    await updateState({ soundEnabled: nextSound });
+    sendResponse?.({ success: true, soundEnabled: nextSound });
+  },
+
+  DISMISS_TAB_CLOSED_MODAL: async (_, sendResponse) => {
+    await updateState({ tabClosedNotice: false });
+    sendResponse?.({ success: true });
+  },
+
+  POPUP_OPENED: (_, sendResponse) => {
+    stopFlashingBadge();
+    chrome.action.setBadgeText({ text: '' });
+    sendResponse?.({ success: true });
+  },
+
+  STOP_FLASHING: (_, sendResponse) => {
     stopFlashingBadge();
     chrome.action.setBadgeText({ text: 'SLOT' });
     chrome.action.setBadgeBackgroundColor({ color: '#00d27a' });
     sendResponse?.({ success: true });
+  },
+};
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  const handler = MESSAGE_HANDLERS[message?.type];
+  if (!handler) return;
+
+  const result = handler(message, sendResponse);
+  // Return true for async handlers to keep sendResponse channel open
+  if (result instanceof Promise) {
+    result.catch((err) => console.error('[DP Background] Handler error:', err));
+    return true;
   }
 });
 
-// Helper to ensure offscreen document exists and play sound
+// ───────────────────────────────────────────────────────────────
+// 8. Notifications
+// ───────────────────────────────────────────────────────────────
+
+function showSlotNotification(result) {
+  const centerTitle = result.centerName || 'ДП Документ';
+  const serviceTitle = result.serviceName || 'Оформлення документів';
+  const notifId = 'dp_slots_' + Date.now();
+
+  try {
+    if (chrome.notifications?.create) {
+      chrome.notifications.create(
+        notifId,
+        {
+          type: 'basic',
+          iconUrl: chrome.runtime.getURL('icons/icon-128.png'),
+          title: `🎉 Знайдено слоти: ${centerTitle}`,
+          message: `Послуга: ${serviceTitle}\nДати: ${result.days.join(', ')}\nНатисніть тут, щоб відкрити чергу!`,
+          priority: 2,
+          requireInteraction: true,
+        },
+        (createdId) => {
+          if (chrome.runtime.lastError) {
+            console.error('[DP Background] Notification error:', chrome.runtime.lastError);
+          }
+        },
+      );
+    }
+  } catch (err) {
+    console.error('[DP Background] Notification error:', err);
+  }
+}
+
+if (chrome.notifications?.onClicked) {
+  chrome.notifications.onClicked.addListener(async (notifId) => {
+    if (typeof notifId !== 'string' || !notifId.startsWith('dp_slots_')) return;
+    try {
+      const state = await getState();
+      if (state?.targetTabId) {
+        await chrome.tabs.update(state.targetTabId, { active: true });
+        const tab = await chrome.tabs.get(state.targetTabId).catch(() => null);
+        if (tab?.windowId) {
+          await chrome.windows.update(tab.windowId, { focused: true });
+        }
+      }
+    } catch (err) {
+      console.error('[DP Background] Focus tab error:', err);
+    }
+  });
+}
+
+// ───────────────────────────────────────────────────────────────
+// 9. Offscreen audio playback
+// ───────────────────────────────────────────────────────────────
+
 async function playOffscreenAudio() {
   try {
+    const state = await getState();
+    if (state?.soundEnabled === false) return;
+
     if ('offscreen' in chrome && chrome.offscreen?.createDocument) {
-      const existing = await chrome.runtime.getContexts?.({
-        contextTypes: ['OFFSCREEN_DOCUMENT'],
-      }).catch(() => []);
+      const existing = await chrome.runtime
+        .getContexts?.({ contextTypes: ['OFFSCREEN_DOCUMENT'] })
+        .catch(() => []);
 
       if (!existing || existing.length === 0) {
         await chrome.offscreen.createDocument({
@@ -363,34 +494,17 @@ async function playOffscreenAudio() {
         });
       }
       await chrome.runtime.sendMessage({ type: 'PLAY_OFFSCREEN_AUDIO' }).catch(() => {});
-      return;
     }
   } catch (err) {
+    // Silently fail — audio is non-critical
   }
 }
 
-if (chrome.notifications?.onClicked) {
-  chrome.notifications.onClicked.addListener(async (notifId) => {
-    if (typeof notifId === 'string' && (notifId.startsWith('dp_slots_') || notifId === 'dp_slots_found')) {
-      try {
-        const data = await chrome.storage.local.get(STORAGE_KEY);
-        const state = data?.[STORAGE_KEY];
-        if (state?.targetTabId) {
-          await chrome.tabs.update(state.targetTabId, { active: true });
-          const tab = await chrome.tabs.get(state.targetTabId).catch(() => null);
-          if (tab?.windowId) {
-            await chrome.windows.update(tab.windowId, { focused: true });
-          }
-        }
-      } catch (err) {
-        console.error('[DP Background] Focus tab error:', err);
-      }
-    }
-  });
-}
+// ───────────────────────────────────────────────────────────────
+// 10. In-page script (executed in target tab context)
+// ───────────────────────────────────────────────────────────────
 
-// In-page script executed in web page
-function inPageCheckDaysScript(defaultServiceId = '4') {
+function inPageCheckDaysScript(defaultServiceId = '4', isFirstCheck = false) {
   try {
     const form = document.querySelector('form#services');
     if (!form) {
@@ -408,8 +522,11 @@ function inPageCheckDaysScript(defaultServiceId = '4') {
     const csrf = csrfMatch[1];
     const center = centerMatch[1];
     const select = document.querySelector('select#service');
-    const serviceId = select?.value && select.value.trim() !== '' ? select.value : defaultServiceId;
-    const selectedOption = select?.selectedOptions?.[0] || (select && select.selectedIndex >= 0 ? select.options[select.selectedIndex] : null);
+    const serviceId =
+      select?.value && select.value.trim() !== '' ? select.value : defaultServiceId;
+    const selectedOption =
+      select?.selectedOptions?.[0] ||
+      (select && select.selectedIndex >= 0 ? select.options[select.selectedIndex] : null);
     const serviceName = selectedOption?.text?.trim() || 'Оформлення документів';
 
     const availableServices = select
@@ -420,7 +537,9 @@ function inPageCheckDaysScript(defaultServiceId = '4') {
 
     const pageHeading = document.querySelector('h1')?.textContent?.trim();
     const subdomain = window.location.hostname.split('.')[0] || '';
-    const centerName = pageHeading || (subdomain ? subdomain.charAt(0).toUpperCase() + subdomain.slice(1) : 'ДП Документ');
+    const centerName =
+      pageHeading ||
+      (subdomain ? subdomain.charAt(0).toUpperCase() + subdomain.slice(1) : 'ДП Документ');
 
     const formData = new FormData();
     formData.append('form', 'days');
@@ -428,10 +547,7 @@ function inPageCheckDaysScript(defaultServiceId = '4') {
     formData.append('ServiceId', serviceId);
     formData.append(csrf, '1');
 
-    return fetch(window.location.href, {
-      method: 'POST',
-      body: formData,
-    })
+    return fetch(window.location.href, { method: 'POST', body: formData })
       .then((res) => {
         if (!res.ok) {
           if (res.status === 503) {
